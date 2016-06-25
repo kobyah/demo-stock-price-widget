@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<unload unload_date="2016-06-25 18:10:43">
+<sp_widget action="INSERT_OR_UPDATE">
+<client_script><![CDATA[function () {
+	var c = this;
+	setResponse(c.data.response);
+	
+	c.getStock = function() {	 
+		c.server.get({symbols: c.data.symbols}).then(function(r) {			
+			setResponse(r.data.response);
+		});	  
+	};
+
+	function setResponse(response) {
+		c.quotes = response.query.results.quote;
+		if (!angular.isArray(c.quotes))
+			c.quotes = [c.quotes];		
+	}
+}]]></client_script>
+<controller_as>c</controller_as>
+<css>.table {
+  width: 20em;
+}
+
+.positive {
+  color: green;
+}
+
+.negative {
+  color: red;
+}
+
+.quote {
+  margin-right: 2em;
+}
+
+.flex-wrap {
+  flex-wrap: wrap;
+}
+
+h4, label {
+  color: black;
+}
+</css>
+<data_table>sp_instance</data_table>
+<demo_data/>
+<description/>
+<docs display_value=""/>
+<field_list/>
+<has_preview>true</has_preview>
+<id>x-stock</id>
+<internal>false</internal>
+<link/>
+<name>Demo Stock Price</name>
+<option_schema/>
+<public>true</public>
+<roles/>
+<script><![CDATA[(function() {
+	// keep symbols in a user preference
+	var u = gs.getUser();
+	if (input) 
+		data.symbols = input.symbols;
+	else
+		data.symbols = u.getPreference('sp.symbols') || 'now msft crm wday';
+
+	u.savePreference('sp.symbols', data.symbols);
+	
+	// call out to yahoo, for info see:
+	// https://developer.yahoo.com/yql/console/?q=show%20tables&env=store://datatables.org/alltableswithkeys
+	var q = 'select * from yahoo.finance.quotes where symbol in ("' + data.symbols + '")';
+	var url = "https://query.yahooapis.com/v1/public/yql";
+	var ws = new GlideHTTPRequest(url);
+	ws.addParameter("q", encodeURI(q));
+	ws.addParameter("env", encodeURI("store://datatables.org/alltableswithkeys"));
+	ws.addParameter("format", "json");
+	var resp = ws.get();
+	data.response = JSON.parse(resp.getBody());
+})();]]></script>
+<servicenow>false</servicenow>
+<sys_class_name>sp_widget</sys_class_name>
+<sys_created_by>admin</sys_created_by>
+<sys_created_on>2016-05-21 14:21:24</sys_created_on>
+<sys_customer_update>false</sys_customer_update>
+<sys_id>dc64b091df231200ba13a4836bf263ab</sys_id>
+<sys_mod_count>124</sys_mod_count>
+<sys_name>Demo Stock Price</sys_name>
+<sys_package display_value="">adc0a0584fd422008a959a211310c7f1</sys_package>
+<sys_policy/>
+<sys_replace_on_upgrade>false</sys_replace_on_upgrade>
+<sys_scope display_value="Global">global</sys_scope>
+<sys_update_name>sp_widget_dc64b091df231200ba13a4836bf263ab</sys_update_name>
+<sys_updated_by>admin</sys_updated_by>
+<sys_updated_on>2016-06-13 01:42:07</sys_updated_on>
+<template><![CDATA[<div>
+  <form class="form-inline">
+    <label class="control-label" for="symbols">${Symbols}</label>
+    <div class="input-group">
+      <input class="form-control" placeholder="Enter Symbol" ng-model="c.data.symbols">  
+      <span class="input-group-btn">
+        <button type="submit" class="btn btn-primary" ng-click="c.getStock();">${Go}</button>
+      </span>
+    </div>
+  </form>
+
+  <div class="flex-row flex-wrap">
+    <div ng-repeat="q in c.quotes" class="quote">
+      <h4>{{q.symbol}} - {{q.Name}}</h4>
+      <table class="table">
+        <tr><td>Price </td><td>{{q.LastTradePriceOnly}}</td></tr>
+        <tr><td>Change </td><td ng-class="{ 'positive': q.Change.startsWith('+'), 'negative': q.Change.startsWith('-') }">{{q.Change}}, {{q.ChangeinPercent}}</td></tr>
+        <tr><td>Day Range </td><td>{{q.DaysRange}}</td></tr>
+        <tr><td>Volume </td><td>{{q.Volume | number}}</td></tr>
+        <tr><td>Market cap </td><td>{{q.MarketCapitalization}}</td></tr>
+      </table>
+    </div>
+  </div>
+</div>]]></template>
+</sp_widget>
+</unload>
